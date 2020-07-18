@@ -1,0 +1,24 @@
+{% extends 'base.jinja2' %}
+
+{% block header %}< | - | !_! | - | >{% endblock header %}
+
+{% block content %}
+
+<form method="POST" id="equation-form">
+    {{ equation_form.csrf_token() }}
+    {{ equation_form.equation.label() }}
+    {{ equation_form.equation() }}
+    {{ equation_form.submit() }}
+</form>
+<br/>
+
+{% if equation_form.equation.data %}
+<form method="POST" id="variable-form">
+    {{ variable_form.csrf_token() }}
+    {{ variable_form.maximum() }}
+    {{ variable_form.minimum() }}
+    {{ variable_form.zero_ok() }}
+</form>
+{% endif %}
+
+{% endblock content %}
