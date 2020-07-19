@@ -4,21 +4,37 @@
 
 {% block content %}
 
-<form method="POST" id="equation-form">
-    {{ equation_form.csrf_token() }}
-    {{ equation_form.equation.label() }}
-    {{ equation_form.equation() }}
-    {{ equation_form.submit() }}
-</form>
-<br/>
+    <form method="POST">
+        {{ equation_form.csrf_token() }}
+        {{ equation_form.equation.label() }}
+        {{ equation_form.equation() }}
+        {{ equation_form.submit() }}
+    </form><br/>
 
-{% if equation_form.equation.data %}
-<form method="POST" id="variable-form">
-    {{ variable_form.csrf_token() }}
-    {{ variable_form.maximum() }}
-    {{ variable_form.minimum() }}
-    {{ variable_form.zero_ok() }}
-</form>
-{% endif %}
+    {% if equation_form.equation.data %}
+        <form method="POST">
+            <table>
+                <tr>
+                    <th>Variable</th>
+                    <th>Min</th>
+                    <th>Max</th>
+                    <th>Zero Ok</th>
+                </tr>
+                {% for var in variable_forms %}
+                    {{ var.csrf_token() }}
+                    <tr>
+                        <td>{{ variables[loop.index - 1] }}</td>
+                        <td>{{ var.maximum() }}</td>
+                        <td>{{ var.minimum() }}</td>
+                        <td>{{ var.zero_ok() }}</td>
+                    </tr>
+                {% endfor %}
+            </table><br/>
+
+            {{ equation_params.positive_only.label() }}
+            {{ equation_params.positive_only() }} <br/><br/>
+            <input type="submit" name="submit" value="Proceed">
+        </form>
+    {% endif %}
 
 {% endblock content %}
