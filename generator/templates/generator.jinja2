@@ -13,6 +13,7 @@
 
     {% if equation_form.equation.data %}
         <form method="POST">
+        <input id="eq" name="eq" type="hidden" value={{ equation_form.equation.data }}>
             <table>
                 <tr>
                     <th>Variable</th>
@@ -22,19 +23,45 @@
                 </tr>
                 {% for var in variable_forms %}
                     {{ var.csrf_token() }}
+                    <input id="variable" name="variable" type="hidden" value={{ variables[loop.index - 1] }}>
                     <tr>
                         <td>{{ variables[loop.index - 1] }}</td>
-                        <td>{{ var.maximum() }}</td>
                         <td>{{ var.minimum() }}</td>
-                        <td>{{ var.zero_ok() }}</td>
+                        <td>{{ var.maximum() }}</td>
+                        <!-- zero_ok returns the variable name if checked because I don't know how to return 'n' if unchecked or how to associate variable responses with the parent form.-->
+                        <td><input type="checkbox" id="zero_ok" name="zero_ok" value={{ variables[loop.index - 1] }}></td>
                     </tr>
                 {% endfor %}
-            </table><br/>
+            </table>
+            <br/>
 
-            {{ equation_params.positive_only.label() }}
-            {{ equation_params.positive_only() }} <br/><br/>
+            {{ equation_params.topic.label() }}{{ equation_params.topic() }}<br/>
+            {{ equation_params.instructions.label() }}{{ equation_params.instructions() }}<br/>
+            {{ equation_params.categories.label() }}{{ equation_params.categories() }}<br/><br/>
+            {{ equation_params.positive_only.label() }}{{ equation_params.positive_only() }}<br/>
             <input type="submit" name="submit" value="Proceed">
         </form>
+    {% endif %}
+
+    {% if problems %}
+        <table>
+            <tr>
+                {% for var in problems[0]['values'] %}
+                    <th>{{ var }}</th>
+                {% endfor %}
+                <th>Problem</th>
+                <th>Answer</th>
+            </tr>
+            {% for problem in problems %}
+                <tr>
+                    {% for var in problems[0]['values'] %}
+                        <td>{{ problem['values'][var] }}</td>
+                    {% endfor %}
+                    <td>{{ problem['problem'] }}</td>
+                    <td>{{ problem['answer'] }}</td>
+                </tr>
+            {% endfor %}
+        </table>
     {% endif %}
 
 {% endblock content %}

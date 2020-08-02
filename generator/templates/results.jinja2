@@ -1,0 +1,37 @@
+{% extends 'base.jinja2' %}
+
+{% block header %}{{ topic }}{% endblock header %}
+
+{% block content %}
+    <strong>Equation:</strong> {{ equation }}</br>
+    <strong>Instructions:</strong> {{ instructions }}</br>
+    <strong>Categories:</strong>
+    <ol>{% for category in categories %}
+        <li>{{ categories[category] }}</li>
+    {% endfor %}</ol><p>
+
+    <table>
+        <tr>
+            {% for var in problems[0]['values'] %}
+                <th>{{ var }}</th>
+            {% endfor %}
+            <th>Problem</th>
+            <th>Answer</th>
+        </tr>
+        {% for problem in problems %}
+            <tr>
+                {% for var in problems[0]['values'] %}
+                    <td>{{ problem['values'][var] }}</td>
+                {% endfor %}
+                <td>{{ problem['problem'] }}</td>
+                <td>{{ problem['answer'] }}</td>
+            </tr>
+        {% endfor %}
+    </table><p>
+
+    <form method="POST" action="{{ url_for('generate') }}">
+        <input type="submit" name="btn" value="Create another">
+    </form><p>
+
+{% endblock content %}
+

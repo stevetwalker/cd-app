@@ -15,25 +15,44 @@ app.config['SECRET_KEY'] = app.secret_key #Following instructions for WTForms
 def generate():
     """Get equation parameters, then generate all viable problems."""
     equation_form, equation_params = EquationForm(), EquationParametersForm()
-    variables, variable_forms = [], []
 
-    if equation_form.validate_on_submit():
-        equation = equation_form.equation.data
-        print(equation)
+    if request.method == 'POST':
 
-        # Identify the vars in the equation and create a VariableForm for each
-        variables = sorted(set([char for char in equation if char.isalpha()]))
-        for var in variables:
-            var = VariableForm()
-            variable_forms.append(var)
-        print(variables, variable_forms)
+        try:
+            # If submitting valid equation data, get var data from equation
+            if equation_form.validate_on_submit():
+                equation, variables, variable_forms = \
+                    generator.process_equation(equation_form, equation_params)
+                return render_template('generator.jinja2',
+                                       equation_form=equation_form,
+                                       variable_forms=variable_forms,
+                                       variables=variables,
+                                       equation_params=equation_params)
 
-    return render_template('generator.jinja2',
-                           equation_form=equation_form,
-                           variable_forms=variable_forms,
-                           variables=variables,
-                           equation_params=equation_params,
-                           error=None)
+            # If submitting variable and equation params, store them in equation_dict
+            if equation_params.validate_on_submit():
+                topic_id = generator.build_topic(request.form)
+
+                return redirect(url_for('results', topic_id=topic_id))
+
+        except Exception as err:
+               print(err)
+
+    return render_template('generator.jinja2', equation_form=equation_form)
+
+
+@app.route('/results', methods=['GET', 'POST'])
+def results():
+    """Display generated problems."""
+    topic_id = request.args.get('topic_id')
+    topic_data = db.get_topic_from_id_in_url(topic_id)
+
+    return render_template('results.jinja2',
+                           topic=topic_data['topic'],
+                           equation=topic_data['equation'],
+                           instructions=topic_data['instructions'],
+                           categories=topic_data['categories'],
+                           problems=topic_data['problems'])
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
