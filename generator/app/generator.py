@@ -1,10 +1,11 @@
 """Processes user inputs, then writes topic and problem data to the db."""
 
 import logging
-import utilities
-import database as db
-from topic import Topic
-from forms import EquationForm, VariableForm, EquationParametersForm
+from app import utilities
+import app.database as db
+from app.topic import Topic
+from app.forms import EquationForm, VariableForm, EquationParametersForm
+from app.models import Topics
 
 
 def process_equation(equation_form, equation_params):
@@ -30,63 +31,66 @@ def process_equation(equation_form, equation_params):
 
 def package_variables(data_dict):
     """Package variable parameters into var_dict."""
-    var_dict = {}
+    var_docs = []
     for i, variable in enumerate(data_dict.getlist('variable')):
 
         # zero_ok returns a list of all variables where zero_ok is checked
         if variable in data_dict.getlist('zero_ok'):
-            zero_result = 'y'
+            zero_result = True
         else:
-            zero_result = 'n'
+            zero_result = False
 
-        var_dict[variable] = {
-            'min': data_dict.getlist('minimum')[i],
-            'max': data_dict.getlist('maximum')[i],
+        var_dict = {
+            'variable': variable,
+            'min': int(data_dict.getlist('minimum')[i]),
+            'max': int(data_dict.getlist('maximum')[i]),
             'zero_ok': zero_result,
             'num_type': 'i'} ### Temporarily hard coded, but will need to fix ###
 
-    return var_dict
+        var_docs.append(var_dict)
+
+    return var_docs
 
 
-def create_equation_dict(var_dict, data_dict):
+def create_equation_dict(var_docs, data_dict):
     """Package equation parameters into equation_dict."""
 
-    # Split categories from string to dict
+    # Split categories from string to list
     category_list = data_dict['categories'].split(', ')
-    category_dict = {}
-    for i, category in enumerate(category_list):
-        category_dict[str(i)] = category
 
     # Assess positive_only equation parameter
     if 'positive_only' in data_dict.keys():
-        positive_only = 'y'
+        positive_only = True
     else:
-        positive_only = 'n'
+        positive_only = False
 
     # Package equation parameters into equation_dict
     equation_dict = {'equation': data_dict['eq'],
                      'topic': data_dict['topic'],
                      'instructions': data_dict['instructions'],
-                     'categories': category_dict,
+                     'categories': category_list,
                      'positive_only': positive_only,
-                     'variables': var_dict}
+                     'variables': var_docs}
 
     logging.info(equation_dict)
     return equation_dict
+
 
 def build_topic(data_dict):
     """Get equation info, generate problems and write result to db."""
 
     utilities.start_logging()
-
     # Identify all valid problem combinations
-    var_dict = package_variables(data_dict)
-    eq_dict = create_equation_dict(var_dict, data_dict)
+    var_docs = package_variables(data_dict)
+    eq_dict = create_equation_dict(var_docs, data_dict)
     topic = Topic(eq_dict)
     topic.generate_problems()
-    print('generate problems')
     logging.info(topic.dict)
 
-    # Store all information in the database
-    topic_id = db.write_to_topics_db(topic.dict)
-    return topic_id
+    # Save to Topics database with mongoengine
+    logging.info('Sending to the databases.')
+    topic_doc = Topics(**topic.dict)
+    topic_doc.save()
+    logging.info(f'Saved {topic_doc.topic} to the database.')
+
+    return topic_doc.id

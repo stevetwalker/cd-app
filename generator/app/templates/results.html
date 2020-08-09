@@ -1,4 +1,4 @@
-{% extends 'base.jinja2' %}
+{% extends "appbuilder/base.html" %}
 
 {% block header %}{{ topic }}{% endblock header %}
 
@@ -29,7 +29,7 @@
         {% endfor %}
     </table><p>
 
-    <form method="POST" action="{{ url_for('generate') }}">
+    <form method="POST">
         <input type="submit" name="btn" value="Create another">
     </form><p>
 

@@ -13,16 +13,7 @@ from sympy.parsing.sympy_parser import parse_expr,\
                                        standard_transformations,\
                                        implicit_multiplication_application
 from sympy.printing import latex
-import utilities
-
-
-# Sample data
-an_equation_dict = {'equation': 'a**2+b**2=c**2',
-                    'positive_only': 'y',
-                    'variables':
-                    {'a': {'min': -1, 'max': 20, 'zero_ok': 'n', 'num_type': 'i'},
-                     'b': {'min': 1, 'max': 20, 'zero_ok': None, 'num_type': 'i'},
-                     'c': {'min': 1, 'max': 100, 'zero_ok': None, 'num_type': 'i'}}}
+from app.utilities import timer
 
 
 class Topic():
@@ -34,13 +25,13 @@ class Topic():
         problems: Lists variable values for all valid problems.
     """
 
-    @utilities.timer
+    @timer
     def __init__(self, equation_dict):
         """Initialize the equation object."""
         self.equation = equation_dict['equation']
         self.variables = equation_dict['variables']
         self.dict = equation_dict
-        self.x = list(self.variables)[-1] # The variable to solve for
+        self.x = list(self.variables)[-1]['variable'] # The variable to solve for
 
 
     def prep_equation(self):
@@ -62,7 +53,7 @@ class Topic():
         return prepped_equation
 
 
-    @utilities.timer
+    @timer
     def generate_var_ranges(self):
         """
         Generate dict of all possible values for each input variable. Do
@@ -71,18 +62,17 @@ class Topic():
         """
 
         var_ranges = {}
-        for variable in self.variables:
-            var = self.variables[variable]
+        for var in self.variables:
             min_to_max = list(range(int(var['min']), int(var['max']) + 1))
-            if (var['zero_ok'] == 'n' and 0 in min_to_max):
+            if (var['zero_ok'] == False and 0 in min_to_max):
                 min_to_max.remove(0)
 
-            var_ranges[variable] = min_to_max
+            var_ranges[var['variable']] = min_to_max
 
         return var_ranges
 
 
-    @utilities.timer
+    @timer
     def generate_input_array(self, var_ranges):
         """
         Using the var_ranges, generate array of all possible variable-value
@@ -101,7 +91,7 @@ class Topic():
         return input_array
 
 
-    @utilities.timer
+    @timer
     def generate_valid_combos(self, prepped_equation, var_ranges, input_array):
         """Generate a list of variable combinations for all valid problems."""
 
@@ -115,17 +105,18 @@ class Topic():
         # For every variable combination, substitute the values for each
         # input variable into the final_equation so sympy can solve for the
         # remaining variable.
+
         for var_values in input_array:
             final_equation = prepped_equation
             for i, var in enumerate(self.variables):
                 if i < len(self.variables)-1:
-                    final_equation = final_equation.subs(var, var_values[i])
+                    final_equation = final_equation.subs(var['variable'], var_values[i])
 
             # Solve for self.x.
             answer = solveset(final_equation, self.x)
 
             #### Currently, this is just rigged to capture when we have a single integer solution
-            if self.dict['positive_only'] == 'y':
+            if self.dict['positive_only'] == True:
                 answer = answer.intersection(ConditionSet(x, x > 0))
 
             # Add valid combinations to valid_combos list, with each valid combo as a dict
@@ -136,7 +127,7 @@ class Topic():
                 # Add variable values to dict
                 for i, var in enumerate(self.variables):
                     if i < len(self.variables)-1:
-                        valid_combo['values'][var] = int(var_values[i])    ### Forces int, which needs to be updated
+                        valid_combo['values'][var['variable']] = int(var_values[i])    ### Forces int, which needs to be updated
 
                 # Add answer value(s) to dict
                 valid_combo['values'][self.x] = [int(i) for i in answer]
@@ -144,6 +135,7 @@ class Topic():
                 valid_combos.append(valid_combo)
 
         return valid_combos
+
 
     def write_problems(self, valid_combos):
         """Takes variable values and returns problem / answer pairs as LaTeX."""
@@ -160,18 +152,18 @@ class Topic():
             subbed_right_side = self.equation[self.equation.find('=')+1:]
 
             for i, var in enumerate(self.variables):
-
+                variable = var['variable']
                 # Replace non-answer variables with values
                 if i < len(self.variables)-1:
-                    subbed_left_side = subbed_left_side.replace(var, str(combo['values'][var]))
-                    subbed_right_side = subbed_right_side.replace(var, str(combo['values'][var]))
+                    subbed_left_side = subbed_left_side.replace(variable, str(combo['values'][variable]))
+                    subbed_right_side = subbed_right_side.replace(variable, str(combo['values'][variable]))
 
                 # Store the answer(s)
                 else:
-                    if len(combo['values'][var]) == 1:
-                        combo['answer'] = f"{var} = {combo['values'][var][0]}"
+                    if len(combo['values'][variable]) == 1:
+                        combo['answer'] = f"{variable} = {combo['values'][variable][0]}"
                     else:
-                        combo['answer'] = f"{var} = {combo['values'][var]}"
+                        combo['answer'] = f"{variable} = {combo['values'][variable]}"
 
             # Latexify each side of the equation, then concatenate
             latex_left_side = latex(parse_expr(subbed_left_side,
@@ -183,6 +175,7 @@ class Topic():
             latex_problem = str(latex_left_side) + ' = ' + str(latex_right_side)
 
             combo['problem'] = str(latex_problem)
+
 
     def generate_problems(self):
         """Update self.dict with list of viable inputs for each variable."""
