@@ -2,7 +2,6 @@
 
 import logging
 from app import utilities
-import app.database as db
 from app.topic import Topic
 from app.forms import EquationForm, VariableForm, EquationParametersForm
 from app.models import Topics

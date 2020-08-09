@@ -4,7 +4,6 @@ from flask_appbuilder.models.mongoengine.interface import MongoEngineInterface
 from app import appbuilder, generator, utilities
 
 import logging
-import app.database as db
 from app.forms import EquationForm, VariableForm, EquationParametersForm
 from app.models import Topics
 
